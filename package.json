@@ -1,0 +1,33 @@
+{
+  "name": "smplcnf",
+  "version": "1.0.0",
+  "description": "Promised JSON config reader",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/**/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spurge/smplcnf.git"
+  },
+  "keywords": [
+    "config",
+    "json"
+  ],
+  "author": "spurge",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/spurge/smplcnf/issues"
+  },
+  "homepage": "https://github.com/spurge/smplcnf#readme",
+  "dependencies": {
+    "lodash": "^4.16.1",
+    "q": "^1.4.1",
+    "redux": "^3.6.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "deep-freeze": "0.0.1",
+    "mocha": "^3.0.2"
+  }
+}
