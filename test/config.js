@@ -1,29 +1,24 @@
-const conf = require('../');
-const deep_freeze = require('deep-freeze');
 const expect = require('chai').expect;
+const format = require('util').format;
 const fs = require('fs');
 const q = require('q');
-const format = require('util').format;
+const simple_config = require('..');
 
 describe('Config', () => {
-    it('shall load and get', done => {
+    it('loads json and gets values', () => {
         const filename = format(
             '/tmp/.smplcnf.test.config.%d.json',
             (new Date()).getTime()
         );
 
-        deep_freeze(conf);
+        const conf = simple_config();
 
-        conf.clear();
-
-        q.nfcall(
+        return q.nfcall(
             fs.writeFile,
             filename,
             '{"test":{"value":"exists!"}}'
         )
-        .then(() => {
-            return conf('test.value', 'dont exists');
-        })
+        .then(() => conf('test.value', 'dont exists'))
         .then(value => {
             expect(value)
             .to.equal('dont exists');
@@ -37,13 +32,10 @@ describe('Config', () => {
             expect(value)
             .to.not.equal('dont exists');
         })
-        .finally(() => {
-            return q.nfcall(fs.unlink, filename);
-        })
-        .done(done);
+        .finally(() => q.nfcall(fs.unlink, filename))
     });
 
-    it('shall clear, load and get', done => {
+    it('loads multiple files and gets overwritten value', () => {
         const filename_1 = format(
             '/tmp/.brewtils.test.config.%d.1.json',
             (new Date()).getTime()
@@ -54,11 +46,9 @@ describe('Config', () => {
             (new Date()).getTime()
         );
 
-        deep_freeze(conf);
+        const conf = simple_config();
 
-        conf.clear();
-
-        q.all([
+        return q.all([
             q.nfcall(
                 fs.writeFile,
                 filename_1,
@@ -70,9 +60,7 @@ describe('Config', () => {
                 '{"test":{"value2":"overwritten!","value3":"bye"}}'
             )
         ])
-        .then(() => {
-            return conf('test.value', 'dont exists');
-        })
+        .then(() => conf('test.value', 'dont exists'))
         .then(value => {
             expect(value)
             .to.equal('dont exists');
@@ -96,43 +84,32 @@ describe('Config', () => {
                 q.nfcall(fs.unlink, filename_1),
                 q.nfcall(fs.unlink, filename_2)
             ]);
-        })
-        .done(done);
+        });
     });
 
-    it('shall set from emptyness', done => {
-        deep_freeze(conf);
+    it('sets values from emptyness', () => {
+        const conf = simple_config();
 
-        conf.clear();
-        conf.set({key: 'value'});
-
-        conf('key')
+        return conf.set({key: 'value'})('key')
         .then(key => {
             expect(key).to.equal('value');
-        })
-        .done(done);
+        });
     });
 
-    it('shall load and set', done => {
-        deep_freeze(conf);
-
+    it('loads and sets', () => {
         const filename = format(
             '/tmp/.brewtils.test.config.%d.json',
             (new Date()).getTime()
         );
 
-        deep_freeze(conf);
+        const conf = simple_config();
 
-        conf.clear();
-
-        q.nfcall(
+        return q.nfcall(
             fs.writeFile,
             filename,
             '{"test":{"value":"is there"}}'
         )
-        .then(() => {
-            conf.load(filename).set({key: 'value'});
-        })
+        .then(() => conf.load(filename).set({key: 'value'}))
         .then(() => conf('key'))
         .then(key => {
             expect(key).to.equal('value');
@@ -142,6 +119,15 @@ describe('Config', () => {
         .then(value => {
             expect(value).to.equal('is there');
         })
-        .done(done);
+        .finally(() => q.nfcall(fs.unlink, filename));
+    });
+
+    it('sets and clears', () => {
+        const conf = simple_config();
+
+        return conf.set({key: 'value'}).clear()('key', 'not there')
+        .then(value => {
+            expect(value).to.equal('not there');
+        });
     });
 });

@@ -19,18 +19,8 @@ function merge(current, data) {
     });
 }
 
-function get(file, name, val) {
-    return file.then(data => {
-        return name.split('.')
-        .reduce((data, name) => {
-            if (typeof data === 'object' &&
-                typeof data[name] !== 'undefined') {
-                return data[name];
-            }
-
-            return val;
-        }, data);
-    });
+function get(state, name, val) {
+    return state.then(data => _.get(data, name, val));
 }
 
 function reducer(state, action) {
@@ -50,45 +40,57 @@ function reducer(state, action) {
     }
 }
 
-const file_store = redux.createStore(reducer);
 
-function get_from_current_state(name, val) {
-    return get(file_store.getState(), name, val);
+function get_from_current_state(store, name, val) {
+    return get(store.getState(), name, val);
 }
 
-function dispatch_clear() {
-    file_store.dispatch({
+function dispatch_clear(store) {
+    store.dispatch({
         type: 'clear'
     });
-
-    return wrapper;
 }
 
-function dispatch_load(filename) {
-    file_store.dispatch({
+function dispatch_load(store, filename) {
+    store.dispatch({
         type: 'load',
         filename: filename
     });
-
-    return wrapper;
 }
 
-function dispatch_set(data) {
-    file_store.dispatch({
+function dispatch_set(store, data) {
+    store.dispatch({
         type: 'set',
         data: data
     });
-
-    return wrapper;
 }
 
-const wrapper = Object.assign(
-    get_from_current_state,
-    {
-        clear: dispatch_clear,
-        load: dispatch_load,
-        set: dispatch_set
+function wrap_dispatcher(conf, store) {
+    return func => (...args) => {
+        func.apply(null, [store].concat(args));
+
+        return conf;
     }
-);
+}
+
+function wrapper() {
+    const store = redux.createStore(reducer);
+    const conf = _.merge(
+        _.wrap(store, get_from_current_state),
+        {
+            clear: null,
+            load: null,
+            set: null
+        }
+    );
+
+    const dispatcher = wrap_dispatcher(conf, store);
+
+    conf.clear = dispatcher(dispatch_clear);
+    conf.load = dispatcher(dispatch_load);
+    conf.set = dispatcher(dispatch_set);
+
+    return conf;
+}
 
 module.exports = wrapper;

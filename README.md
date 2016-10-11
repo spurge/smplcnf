@@ -12,11 +12,12 @@ How to use it
 -------------
 
 ```javascript
-const conf = require('smplcnf');
+const simple_config = require('smplcnf');
 
-// Load json configuration file and change the global config
-// state so the loaded data will be available everywhere in
-// the application scope.
+// Create a new config instance
+const conf = simple_config();
+
+// Load json configuration file
 conf.load('config.json');
 
 // Get config data with a fallback value
