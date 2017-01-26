@@ -1,6 +1,8 @@
 Smplcnf
 =======
 
+[![Build Status](https://semaphoreci.com/api/v1/spurge/smplcnf/branches/master/shields_badge.svg)](https://semaphoreci.com/spurge/smplcnf)
+
 Promised JSON config reader
 
 Install
