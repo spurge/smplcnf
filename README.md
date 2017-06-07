@@ -1,28 +1,30 @@
 Smplcnf
 =======
 
-[![Build Status](https://semaphoreci.com/api/v1/spurge/smplcnf/branches/master/shields_badge.svg)](https://semaphoreci.com/spurge/smplcnf)
+[![Build Status](https://semaphoreci.com/api/v1/spurge/smplcnf/branches/master/shields_badge.svg)](https://semaphoreci.com/spurge/smplcnf) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
-Promised JSON config reader
+Redux based and promised JSON config reader
 
 Install
 -------
 
-`npm install --save smplcnf`
+`npm install --save -E smplcnf`
 
 How to use it
 -------------
 
 ```javascript
-const simple_config = require('smplcnf');
+const simpleConfig = require('smplcnf');
 
 // Create a new config instance
-const conf = simple_config();
+const conf = simpleConfig();
 
 // Load json configuration file
+// This changes the Redux store state
 conf.load('config.json');
 
-// Get config data with a fallback value
+// Then get config data with a fallback value
+// from the latest state
 conf('some-level-1.some-level-2.property', 'fallback')
 .then(value => {
     // some code ...
@@ -43,3 +45,9 @@ conf
 .load('local.config.json')
 .set({key: 'value'});
 ```
+
+How to test
+-----------
+
+* Tests: `npm test`
+* Lints: `npm run lint`

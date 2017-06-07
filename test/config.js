@@ -1,133 +1,136 @@
-const expect = require('chai').expect;
-const format = require('util').format;
-const fs = require('fs');
-const q = require('q');
-const simple_config = require('..');
+'use strict'
+/* eslint-env mocha */
 
-describe('Config', () => {
-    it('loads json and gets values', () => {
-        const filename = format(
-            '/tmp/.smplcnf.test.config.%d.json',
-            (new Date()).getTime()
-        );
+const expect = require('chai').expect
+const format = require('util').format
+const fs = require('fs')
+const Promise = require('bluebird')
 
-        const conf = simple_config();
+const writeFile = Promise.promisify(fs.writeFile)
+const unlink = Promise.promisify(fs.unlink)
 
-        return q.nfcall(
-            fs.writeFile,
-            filename,
-            '{"test":{"value":"exists!"}}'
-        )
-        .then(() => conf('test.value', 'dont exists'))
-        .then(value => {
-            expect(value)
-            .to.equal('dont exists');
-        })
-        .then(() => {
-            conf.load(filename);
+const simpleConfig = require('..')
 
-            return conf('test.value', 'dont exists');
-        })
-        .then(value => {
-            expect(value)
-            .to.not.equal('dont exists');
-        })
-        .finally(() => q.nfcall(fs.unlink, filename))
-    });
+describe('Simple Config', () => {
+  it('loads json and gets values', () => {
+    const filename = format(
+      '/tmp/.smplcnf.test.config.%d.json',
+      (new Date()).getTime()
+    )
 
-    it('loads multiple files and gets overwritten value', () => {
-        const filename_1 = format(
-            '/tmp/.brewtils.test.config.%d.1.json',
-            (new Date()).getTime()
-        );
+    const conf = simpleConfig()
 
-        const filename_2 = format(
-            '/tmp/.brewtils.test.config.%d.2.json',
-            (new Date()).getTime()
-        );
+    return writeFile(
+      filename,
+      '{"test":{"value":"exists!"}}'
+    )
+    .then(() => conf('test.value', 'dont exists'))
+    .then(value => {
+      expect(value)
+        .to.equal('dont exists')
+    })
+    .then(() => {
+      conf.load(filename)
 
-        const conf = simple_config();
+      return conf('test.value', 'dont exists')
+    })
+    .then(value => {
+      expect(value)
+        .to.not.equal('dont exists')
+    })
+    .finally(() => unlink(filename))
+  })
 
-        return q.all([
-            q.nfcall(
-                fs.writeFile,
-                filename_1,
-                '{"test":{"value1":"funk","value2":"hello"}}'
-            ),
-            q.nfcall(
-                fs.writeFile,
-                filename_2,
-                '{"test":{"value2":"overwritten!","value3":"bye"}}'
-            )
-        ])
-        .then(() => conf('test.value', 'dont exists'))
-        .then(value => {
-            expect(value)
-            .to.equal('dont exists');
-        })
-        .then(() => {
-            conf.load(filename_1).load(filename_2);
+  it('loads multiple files and gets overwritten value', () => {
+    const filename1 = format(
+      '/tmp/.brewtils.test.config.%d.1.json',
+      (new Date()).getTime()
+    )
 
-            return q.all([
-                conf('test.value1'),
-                conf('test.value2'),
-                conf('test.value3')
-            ]);
-        })
-        .spread((value1, value2, value3) => {
-            expect(value1).to.equal('funk');
-            expect(value2).to.equal('overwritten!');
-            expect(value3).to.equal('bye');
-        })
-        .finally(() => {
-            return q.all([
-                q.nfcall(fs.unlink, filename_1),
-                q.nfcall(fs.unlink, filename_2)
-            ]);
-        });
-    });
+    const filename2 = format(
+      '/tmp/.brewtils.test.config.%d.2.json',
+      (new Date()).getTime()
+    )
 
-    it('sets values from emptyness', () => {
-        const conf = simple_config();
+    const conf = simpleConfig()
 
-        return conf.set({key: 'value'})('key')
-        .then(key => {
-            expect(key).to.equal('value');
-        });
-    });
+    return Promise.all([
+      writeFile(
+        filename1,
+        '{"test":{"value1":"funk","value2":"hello"}}'
+      ),
+      writeFile(
+        filename2,
+        '{"test":{"value2":"overwritten!","value3":"bye"}}'
+      )
+    ])
+    .then(() => conf('test.value', 'dont exists'))
+    .then(value => {
+      expect(value)
+        .to.equal('dont exists')
+    })
+    .then(() => {
+      conf.load(filename1).load(filename2)
 
-    it('loads and sets', () => {
-        const filename = format(
-            '/tmp/.brewtils.test.config.%d.json',
-            (new Date()).getTime()
-        );
+      return Promise.all([
+        conf('test.value1'),
+        conf('test.value2'),
+        conf('test.value3')
+      ])
+    })
+    .spread((value1, value2, value3) => {
+      expect(value1).to.equal('funk')
+      expect(value2).to.equal('overwritten!')
+      expect(value3).to.equal('bye')
+    })
+    .finally(() => {
+      return Promise.all([
+        unlink(filename1),
+        unlink(filename2)
+      ])
+    })
+  })
 
-        const conf = simple_config();
+  it('sets values from emptyness', () => {
+    const conf = simpleConfig()
 
-        return q.nfcall(
-            fs.writeFile,
-            filename,
-            '{"test":{"value":"is there"}}'
-        )
-        .then(() => conf.load(filename).set({key: 'value'}))
-        .then(() => conf('key'))
-        .then(key => {
-            expect(key).to.equal('value');
+    return conf.set({key: 'value'})('key')
+    .then(key => {
+      expect(key).to.equal('value')
+    })
+  })
 
-            return conf('test.value');
-        })
-        .then(value => {
-            expect(value).to.equal('is there');
-        })
-        .finally(() => q.nfcall(fs.unlink, filename));
-    });
+  it('loads and sets', () => {
+    const filename = format(
+      '/tmp/.brewtils.test.config.%d.json',
+      (new Date()).getTime()
+    )
 
-    it('sets and clears', () => {
-        const conf = simple_config();
+    const conf = simpleConfig()
 
-        return conf.set({key: 'value'}).clear()('key', 'not there')
-        .then(value => {
-            expect(value).to.equal('not there');
-        });
-    });
-});
+    return writeFile(
+      filename,
+      '{"test":{"value":"is there"}}'
+    )
+    .then(() => conf.load(filename).set({key: 'value'}))
+    .then(() => conf('key'))
+    .then(key => {
+      expect(key).to.equal('value')
+
+      return conf('test.value')
+    })
+    .then(value => {
+      expect(value).to.equal('is there')
+    })
+    .finally(() => unlink(filename))
+  })
+
+  it('sets and clears', () => {
+    const conf = simpleConfig()
+
+    return conf.set({key: 'value'}).clear()('key', 'not there')
+    .then(value => {
+      expect(value).to.equal('not there')
+    })
+  })
+})
